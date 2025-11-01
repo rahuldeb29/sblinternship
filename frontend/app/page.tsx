@@ -40,18 +40,19 @@ export default function Home() {
   });
 
   // Poll task status
-  const { data: task, isLoading } = useQuery<TaskData>({
+  const { data: task, isLoading } = useQuery<TaskData | undefined>({
     queryKey: ['task', taskId],
     queryFn: async () => {
       const response = await axios.get(`${API_URL}/task/${taskId}`);
       return response.data;
     },
     enabled: !!taskId,
-    refetchInterval: (data) => {
+    refetchInterval: (data: TaskData | undefined) => {
       if (!data) return 2000;
-      return data.status === 'completed' || data.status === 'failed' 
-        ? false 
-        : 2000;
+      if (data.status === 'completed' || data.status === 'failed') {
+        return false;
+      }
+      return 2000;
     },
   });
 
