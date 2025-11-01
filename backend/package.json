@@ -1,0 +1,24 @@
+{
+  "name": "fueler-backend",
+  "version": "1.0.0",
+  "description": "Backend for Fueler Project",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.13.1",
+    "bull": "^4.16.5",
+    "cheerio": "^1.1.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "pg": "^8.16.3",
+    "sqlite": "^5.1.1"
+  }
+}
