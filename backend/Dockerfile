@@ -1,15 +1,10 @@
-FROM node:18
+FROM node:20
 
 WORKDIR /app
 
-# Copy only package files from backend
-COPY package.json package-lock.json ./
-
-# Install dependencies
-RUN npm install
-
-# Copy the rest of the code
 COPY . .
+
+RUN npm install
 
 EXPOSE 5000
 
