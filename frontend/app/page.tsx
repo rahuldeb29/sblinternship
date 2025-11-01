@@ -5,7 +5,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import styles from './page.module.css';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000/api';
 
 interface TaskData {
   id: number;
