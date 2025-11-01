@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import styles from './page.module.css';
 
@@ -21,48 +20,56 @@ interface TaskData {
 export default function Home() {
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [question, setQuestion] = useState('');
-  const [taskId, setTaskId] = useState<number | null>(null);
+  const [task, setTask] = useState<TaskData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Submit mutation
-  const submitMutation = useMutation({
-    mutationFn: async (data: { websiteUrl: string; userQuestion: string }) => {
-      const response = await axios.post(`${API_URL}/submit`, data);
-      return response.data;
-    },
-    onSuccess: (data) => {
-      setTaskId(data.taskId);
-      setWebsiteUrl('');
-      setQuestion('');
-    },
-    onError: (error: any) => {
-      alert('Error: ' + (error.response?.data?.error || error.message));
-    }
-  });
-
-  // Poll task status
-  const { data: task, isLoading } = useQuery<TaskData | undefined>({
-    queryKey: ['task', taskId],
-    queryFn: async () => {
-      const response = await axios.get(`${API_URL}/task/${taskId}`);
-      return response.data;
-    },
-    enabled: !!taskId,
-    refetchInterval: (data: TaskData | undefined) => {
-      if (!data) return 2000;
-      if (data.status === 'completed' || data.status === 'failed') {
-        return false;
-      }
-      return 2000;
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!websiteUrl || !question) {
       alert('Please fill all fields');
       return;
     }
-    submitMutation.mutate({ websiteUrl, userQuestion: question });
+
+    try {
+      setSubmitting(true);
+      const response = await axios.post(`${API_URL}/submit`, {
+        websiteUrl,
+        userQuestion: question
+      });
+      setTask(response.data);
+      setWebsiteUrl('');
+      setQuestion('');
+      pollTaskStatus(response.data.id);
+    } catch (error: any) {
+      alert('Error: ' + (error.response?.data?.error || error.message));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const pollTaskStatus = async (taskId: number) => {
+    setLoading(true);
+    const interval = setInterval(async () => {
+      try {
+        const response = await axios.get(`${API_URL}/task/${taskId}`);
+        setTask(response.data);
+
+        if (response.data.status === 'completed' || response.data.status === 'failed') {
+          clearInterval(interval);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error polling task:', error);
+        clearInterval(interval);
+        setLoading(false);
+      }
+    }, 2000);
+  };
+
+  const resetForm = () => {
+    setTask(null);
+    setLoading(false);
   };
 
   return (
@@ -100,10 +107,10 @@ export default function Home() {
           
           <button 
             type="submit" 
-            disabled={submitMutation.isPending}
+            disabled={submitting}
             className={styles.button}
           >
-            {submitMutation.isPending ? '⏳ Submitting...' : '✉️ Submit'}
+            {submitting ? '⏳ Submitting...' : '✉️ Submit'}
           </button>
         </form>
 
@@ -130,7 +137,7 @@ export default function Home() {
                   {task.ai_answer}
                 </div>
                 <button 
-                  onClick={() => setTaskId(null)}
+                  onClick={resetForm}
                   className={styles.resetButton}
                 >
                   Ask Another Question
