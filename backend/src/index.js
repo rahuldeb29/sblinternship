@@ -2,6 +2,11 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import tasksRouter from './routes/tasks.js';
+import { initializeDatabase } from './db/init.js';
+
+// Initialize database
+await initializeDatabase();
+
 import './workers/scrapingWorker.js'; // Start worker
 
 dotenv.config();
