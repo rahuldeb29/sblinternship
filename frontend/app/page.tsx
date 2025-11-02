@@ -37,10 +37,23 @@ export default function Home() {
         websiteUrl,
         userQuestion: question
       });
-      setTask(response.data);
-      setWebsiteUrl('');
-      setQuestion('');
-      pollTaskStatus(response.data.id);
+      
+      // Safely set task data
+      if (response.data && response.data.taskId) {
+        setTask({
+          id: response.data.taskId,
+          website_url: websiteUrl,
+          user_question: question,
+          scraped_content: null,
+          ai_answer: null,
+          status: 'pending',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+        setWebsiteUrl('');
+        setQuestion('');
+        pollTaskStatus(response.data.taskId);
+      }
     } catch (error: any) {
       alert('Error: ' + (error.response?.data?.error || error.message));
     } finally {
@@ -50,14 +63,30 @@ export default function Home() {
 
   const pollTaskStatus = async (taskId: number) => {
     setLoading(true);
+    let pollCount = 0;
+    const maxPolls = 60; // Stop after 60 polls (2 minutes)
+    
     const interval = setInterval(async () => {
+      pollCount++;
+      
+      if (pollCount > maxPolls) {
+        clearInterval(interval);
+        setLoading(false);
+        alert('Request timeout. Please try again.');
+        return;
+      }
+      
       try {
         const response = await axios.get(`${API_URL}/task/${taskId}`);
-        setTask(response.data);
-
-        if (response.data.status === 'completed' || response.data.status === 'failed') {
-          clearInterval(interval);
-          setLoading(false);
+        
+        if (response.data && response.data.status) {
+          setTask(response.data);
+          
+          // Stop polling if completed or failed
+          if (response.data.status === 'completed' || response.data.status === 'failed') {
+            clearInterval(interval);
+            setLoading(false);
+          }
         }
       } catch (error) {
         console.error('Error polling task:', error);
@@ -71,6 +100,9 @@ export default function Home() {
     setTask(null);
     setLoading(false);
   };
+
+  // Safe status value
+  const taskStatus = task?.status || 'pending';
 
   return (
     <main className={styles.main}>
@@ -115,26 +147,26 @@ export default function Home() {
         </form>
 
         {task && (
-          <div className={`${styles.result} ${styles[task.status]}`}>
-            <h2>Status: <span>{task.status.toUpperCase()}</span></h2>
+          <div className={`${styles.result} ${styles[taskStatus]}`}>
+            <h2>Status: <span>{taskStatus.toUpperCase()}</span></h2>
             
-            {task.status === 'pending' && (
+            {taskStatus === 'pending' && (
               <p className={styles.statusMessage}>⏳ Your request is waiting in the queue...</p>
             )}
             
-            {task.status === 'processing' && (
+            {taskStatus === 'processing' && (
               <p className={styles.statusMessage}>🔄 Processing your request... This may take 1-2 minutes</p>
             )}
             
-            {task.status === 'failed' && (
+            {taskStatus === 'failed' && (
               <p className={styles.statusMessage}>❌ Failed to process your request. Please try again.</p>
             )}
             
-            {task.status === 'completed' && (
+            {taskStatus === 'completed' && (
               <div className={styles.answer}>
                 <h3>✅ AI Answer:</h3>
                 <div className={styles.answerContent}>
-                  {task.ai_answer}
+                  {task.ai_answer || 'No answer available'}
                 </div>
                 <button 
                   onClick={resetForm}
