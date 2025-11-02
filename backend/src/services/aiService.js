@@ -18,7 +18,7 @@ export async function getAIAnswer(scrapedContent, question) {
     console.log('Using Gemini 2.5 Flash model via v1beta API');
     
     // Limit content to 2000 characters to avoid token limits
-    const prompt = `Based on the following website content, answer this question: "${question}"\n\nContent: ${scrapedContent.substring(0, 2000)}`;
+    const prompt = `Based on the following website content, answer this question in details using simpler terms so that anyone can understand about the topic easily: "${question}"\n\nContent: ${scrapedContent.substring(0, 3000)}`;
     
     const response = await axios.post(url, {
       contents: [{
