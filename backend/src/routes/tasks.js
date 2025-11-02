@@ -11,13 +11,21 @@ router.post('/submit', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
     
+    // Insert into database
     const result = await pool.query(
       'INSERT INTO scraping_tasks (website_url, user_question, status) VALUES ($1, $2, $3) RETURNING id',
       [websiteUrl, userQuestion, 'pending']
     );
     
     const taskId = result.rows[0].id;
-    console.log(`✅ Task created with ID: ${taskId}`);
+    
+    // Simulate response (instead of actual scraping)
+    setTimeout(async () => {
+      await pool.query(
+        'UPDATE scraping_tasks SET status = $1, ai_answer = $2 WHERE id = $3',
+        ['completed', `This is a demo answer for: ${userQuestion}`, taskId]
+      );
+    }, 3000);
     
     res.json({ success: true, taskId });
   } catch (error) {
