@@ -2,10 +2,10 @@ import express from 'express';
 import pool from '../db/connection.js';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const router = express.Router();
-const client = new Anthropic();
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Function to scrape website content
 async function scrapeWebsite(url) {
@@ -36,23 +36,20 @@ async function scrapeWebsite(url) {
   }
 }
 
-// Function to get AI response
+// Function to get AI response using Google Gemini
 async function getAIResponse(scrapedContent, userQuestion) {
   try {
-    const message = await client.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 1024,
-      messages: [
-        {
-          role: 'user',
-          content: `Based on the following website content, please answer this question: "${userQuestion}"\n\nWebsite Content:\n${scrapedContent}`
-        }
-      ]
-    });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     
-    return message.content[0].type === 'text' ? message.content[0].text : 'No response generated';
+    const prompt = `Based on the following website content, please answer this question: "${userQuestion}"\n\nWebsite Content:\n${scrapedContent}`;
+    
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    return text;
   } catch (error) {
-    console.error('AI error:', error.message);
+    console.error('Gemini AI error:', error.message);
     throw new Error(`Failed to generate AI response: ${error.message}`);
   }
 }
@@ -98,7 +95,7 @@ async function processTask(taskId, websiteUrl, userQuestion) {
     // Scrape the website
     const scrapedContent = await scrapeWebsite(websiteUrl);
     
-    // Get AI response
+    // Get AI response using Gemini
     const aiAnswer = await getAIResponse(scrapedContent, userQuestion);
     
     // Update database with completed status
