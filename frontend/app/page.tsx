@@ -4,7 +4,7 @@ import { useState } from 'react';
 import axios from 'axios';
 import styles from './page.module.css';
 
-const API_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || 'https://sbl-backend-c6i9.onrender.com').replace(/\/$/, '');
+const API_URL = 'https://sbl-backend-c6i9.onrender.com/api';
 
 interface TaskData {
   id: number;
